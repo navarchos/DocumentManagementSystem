@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Реестр распоряжений - ЭДО ЛДПР{% endblock %}
+{% block content %}
+<h2 class="fw-bold mb-4"><i class="bi bi-file-text me-2"></i>Реестр распоряжений</h2>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        {% if overdue_filter == 'yes' %}
+        <a href="/orders" class="btn btn-secondary btn-sm">Сбросить фильтр просроченных</a>
+        {% endif %}
+    </div>
+    <div>
+        <a href="/orders/export" class="btn btn-success btn-sm"><i class="bi bi-file-excel"></i> Экспорт в Excel</a>
+    </div>
+</div>
+
+<div class="card p-3 mb-4">
+    <form method="GET" class="row g-3">
+        <div class="col-md-4"><div class="input-group"><span class="input-group-text"><i class="bi bi-search"></i></span><input type="text" name="search" class="form-control" placeholder="Поиск..." value="{{ request.args.get('search','') }}"></div></div>
+        <div class="col-md-3"><select name="status" class="form-select"><option value="Все">Все статусы</option>{% for s in statuses %}<option value="{{ s }}" {% if request.args.get('status') == s %}selected{% endif %}">{{ s }}</option>{% endfor %}</select></div>
+        <div class="col-md-3"><select name="priority" class="form-select"><option value="Все">Все приоритеты</option>{% for p in priorities %}<option value="{{ p }}" {% if request.args.get('priority') == p %}selected{% endif %}">{{ p }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Фильтр</button></div>
+    </form>
+</div>
+
+{% if current_user.role in ['assistant'] %}
+<button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg"></i> Создать</button>
+{% endif %}
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Документ</th><th>Приоритет</th><th>Статус</th><th>Срок</th><th>Автор</th><th>Создан</th></tr></thead>
+            <tbody>
+                {% for o in orders %}
+                {% if o.deadline and o.deadline < now.date() and o.status not in ['Закрыто','Отклонено'] %}
+                <tr class="overdue-row" style="cursor:pointer" onclick="location.href='/orders/{{ o.id }}'">
+                {% else %}
+                <tr style="cursor:pointer" onclick="location.href='/orders/{{ o.id }}'">
+                {% endif %}
+                    <td><strong>{{ o.title }}</strong><br><small class="text-muted">#{{ o.id[:8] }}</small></td>
+                    <td><span class="fw-bold {% if o.priority == 'Срочный' %}text-danger{% elif o.priority == 'Высокий' %}text-warning{% else %}text-primary{% endif %}">{{ o.priority }}</span></td>
+                    <td><span class="badge-status {% if o.status in ['Утверждено','Закрыто'] %}bg-success{% elif o.status == 'Отклонено' %}bg-danger{% elif o.status == 'На утверждении' %}bg-warning text-dark{% else %}bg-primary{% endif %}">{{ o.status }}</span></td>
+                    <td>{% if o.deadline and o.deadline < now.date() and o.status not in ['Закрыто','Отклонено'] %}<strong class="text-danger">{{ o.deadline.strftime('%d.%m.%Y') }}</strong>{% else %}{{ o.deadline.strftime('%d.%m.%Y') if o.deadline else '-' }}{% endif %}</td>
+                    <td><small>{{ o.creator_name }}</small></td>
+                    <td><small class="text-muted">{{ o.created_at.strftime('%d.%m.%Y %H:%M') }}</small></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if current_user.role in ['assistant'] %}
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title fw-bold">Новое распоряжение</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="POST" action="/orders/create">
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label fw-bold small text-uppercase text-muted">Заголовок</label><input type="text" name="title" class="form-control" required></div>
+                    <div class="row mb-3">
+                        <div class="col-md-6"><label class="form-label fw-bold small text-uppercase text-muted">Приоритет</label><select name="priority" class="form-select"><option>Низкий</option><option selected>Нормальный</option><option>Высокий</option><option>Срочный</option></select></div>
+                        <div class="col-md-6"><label class="form-label fw-bold small text-uppercase text-muted">Срок</label><input type="date" name="deadline" class="form-control"></div>
+                    </div>
+                    <div class="mb-3"><label class="form-label fw-bold small text-uppercase text-muted">Содержание</label><textarea name="content" class="form-control" rows="6" required></textarea></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" name="is_draft" value="1" class="btn btn-outline-primary">Черновик</button>
+                    <button type="submit" class="btn btn-primary">На утверждение</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

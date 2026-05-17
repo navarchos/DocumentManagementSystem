@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Рабочий стол - ЭДО ЛДПР{% endblock %}
+{% block content %}
+<h2 class="fw-bold mb-4"><i class="bi bi-speedometer2 me-2"></i>Рабочий стол</h2>
+
+<div class="row mb-4">
+    <div class="col-md-3 mb-3"><div class="card stat-card p-3"><small class="text-muted text-uppercase fw-bold" style="font-size:0.65rem;">Мои распоряжения</small><h2 class="fw-bold mb-0">{{ stats.total }}</h2></div></div>
+    <div class="col-md-3 mb-3"><div class="card stat-card p-3" style="border-left-color:#f59e0b;"><small class="text-muted text-uppercase fw-bold" style="font-size:0.65rem;">На утверждении</small><h2 class="fw-bold mb-0">{{ stats.pending }}</h2></div></div>
+    <div class="col-md-3 mb-3"><div class="card stat-card p-3" style="border-left-color:#10b981;"><small class="text-muted text-uppercase fw-bold" style="font-size:0.65rem;">Утверждено</small><h2 class="fw-bold mb-0">{{ stats.approved }}</h2></div></div>
+    <div class="col-md-3 mb-3"><div class="card stat-card p-3" style="border-left-color:#6366f1;"><small class="text-muted text-uppercase fw-bold" style="font-size:0.65rem;">В работе</small><h2 class="fw-bold mb-0">{{ stats.in_work }}</h2></div></div>
+</div>
+
+{% if stats.overdue > 0 %}
+<div class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle-fill"></i> У вас есть <strong>{{ stats.overdue }}</strong> просроченных распоряжений.
+</div>
+{% endif %}
+
+<div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">Просроченные распоряжения</h5>
+        <a href="/orders?overdue=yes" class="btn btn-danger btn-sm">Все просроченные</a>
+    </div>
+    {% if overdue %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Документ</th><th>Статус</th><th>Срок</th><th>Действие</th></tr></thead>
+            <tbody>
+                {% for o in overdue %}
+                <tr class="overdue-row" onclick="location.href='/orders/{{ o.id }}'" style="cursor:pointer">
+                    <td><strong>{{ o.title }}</strong><br><small>#{{ o.id[:8] }}</small></td>
+                    <td><span class="badge-status bg-danger">{{ o.status }}</span></td>
+                    <td><strong class="text-danger">{{ o.deadline.strftime('%d.%m.%Y') }}</strong></td>
+                    <td><a href="/orders/{{ o.id }}" class="btn btn-sm btn-outline-primary">Перейти</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-center py-3">Нет просроченных распоряжений</p>
+    {% endif %}
+</div>
+
+<div class="card p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">Последние распоряжения</h5>
+        <a href="/orders" class="btn btn-primary btn-sm">Все распоряжения</a>
+    </div>
+    {% if orders %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Документ</th><th>Статус</th><th>Приоритет</th><th>Создан</th></tr></thead>
+            <tbody>
+                {% for o in orders %}
+                <tr style="cursor:pointer" onclick="location.href='/orders/{{ o.id }}'">
+                    <td><strong>{{ o.title }}</strong><br><small class="text-muted">#{{ o.id[:8] }}</small></td>
+                    <td><span class="badge-status {% if o.status in ['Утверждено','Закрыто'] %}bg-success{% elif o.status == 'Отклонено' %}bg-danger{% elif o.status == 'На утверждении' %}bg-warning text-dark{% else %}bg-primary{% endif %}">{{ o.status }}</span></td>
+                    <td><span class="fw-bold {% if o.priority == 'Срочный' %}text-danger{% elif o.priority == 'Высокий' %}text-warning{% else %}text-primary{% endif %}">{{ o.priority }}</span></td>
+                    <td><small class="text-muted">{{ o.created_at.strftime('%d.%m.%Y') }}</small></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-center py-4">Нет распоряжений</p>
+    {% endif %}
+</div>
+{% endblock %}

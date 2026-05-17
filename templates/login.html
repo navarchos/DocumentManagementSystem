@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Вход - ЭДО ЛДПР{% endblock %}
+{% block full_content %}
+<style>
+    .login-page-new {
+        background-image: url('/static/bg.png');
+        background-size: cover;
+        background-position: center;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .login-card-new {
+        background: #003399;
+        border: 3px solid #FFD700;
+        border-radius: 20px;
+        padding: 40px 50px;
+        max-width: 420px;
+        width: 100%;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    .login-logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 10px;
+    }
+    .login-logo-line {
+        height: 2px;
+        width: 60px;
+        background: #FFD700;
+    }
+    .login-logo-text {
+        color: #FFD700;
+        font-size: 3rem;
+        font-weight: 900;
+        letter-spacing: 4px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .login-subtitle {
+        color: #FFD700;
+        text-align: center;
+        font-size: 0.75rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 30px;
+        line-height: 1.4;
+    }
+    .login-label {
+        color: #FFD700;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+        display: block;
+    }
+    .login-input {
+        background: transparent;
+        border: 2px solid #FFD700;
+        border-radius: 8px;
+        color: #FFD700;
+        padding: 12px 15px;
+        width: 100%;
+        font-size: 1rem;
+        outline: none;
+        transition: all 0.3s;
+    }
+    .login-input::placeholder {
+        color: rgba(255,215,0,0.5);
+    }
+    .login-input:focus {
+        background: rgba(255,215,0,0.1);
+        box-shadow: 0 0 15px rgba(255,215,0,0.3);
+    }
+    .login-btn {
+        background: linear-gradient(180deg, #FFD700 0%, #D4A500 100%);
+        border: none;
+        border-radius: 8px;
+        color: #003399;
+        font-weight: 700;
+        font-size: 1.1rem;
+        padding: 15px;
+        width: 100%;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-top: 10px;
+    }
+    .login-btn:hover {
+        background: linear-gradient(180deg, #FFE44D 0%, #FFD700 100%);
+        box-shadow: 0 5px 20px rgba(255,215,0,0.4);
+    }
+    .login-alert {
+        background: rgba(255,0,0,0.2);
+        border: 1px solid #ff6b6b;
+        color: #fff;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 0.85rem;
+    }
+    .input-icon-wrapper {
+        position: relative;
+    }
+    .input-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #FFD700;
+        opacity: 0.7;
+        font-size: 1.1rem;
+    }
+    .login-input.with-icon {
+        padding-left: 45px;
+    }
+</style>
+<div class="login-page-new">
+    <div class="login-card-new">
+        <div class="login-logo">
+            <div class="login-logo-line"></div>
+            <div class="login-logo-text">ЛДПР</div>
+            <div class="login-logo-line"></div>
+        </div>
+        <div class="login-subtitle">
+            Либерально-демократическая<br>партия России
+        </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for cat, msg in messages %}
+        <div class="login-alert">{{ msg }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+        <form method="POST">
+            <div class="mb-3">
+                <label class="login-label">Логин</label>
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-person input-icon"></i>
+                    <input type="text" name="username" class="login-input with-icon" placeholder="" required>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="login-label">Пароль</label>
+                <div class="input-icon-wrapper">
+                    <i class="bi bi-lock input-icon"></i>
+                    <input type="password" name="password" class="login-input with-icon" placeholder="" required>
+                </div>
+            </div>
+            <button type="submit" class="login-btn">Войти</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

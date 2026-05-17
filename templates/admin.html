@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Администрирование - ЭДО ЛДПР{% endblock %}
+{% block content %}
+<h2 class="fw-bold mb-4"><i class="bi bi-shield-lock me-2"></i>Администрирование</h2>
+
+<div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">Пользователи</h5>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal"><i class="bi bi-plus-lg"></i> Добавить</button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>ФИО</th><th>Логин</th><th>Роль</th><th>Email</th><th>Отдел</th><th>Действия</th></tr></thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>{{ u.full_name }}</td>
+                    <td>{{ u.username }}</td>
+                    <td><span class="badge bg-secondary">{{ u.role }}</span></td>
+                    <td>{{ u.email }}</td>
+                    <td>{% for d in departments %}{% if d.id == u.department_id %}{{ d.name }}{% endif %}{% endfor %}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editUser{{ u.uid }}"><i class="bi bi-pencil"></i></button>
+                        <form method="POST" action="/admin/users/{{ u.uid }}/delete" class="d-inline" onsubmit="return confirm('Удалить пользователя?')">
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">Отделы</h5>
+        <span class="badge bg-primary">{{ departments|length }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Название</th><th>Руководитель</th><th>Действия</th></tr></thead>
+            <tbody>
+                {% for d in departments %}
+                <tr>
+                    <td><strong>{{ d.name }}</strong></td>
+                    <td>{% for u in users %}{% if u.uid == d.head_id %}{{ u.full_name }}{% endif %}{% endfor %}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#setHeadModal{{ d.id }}"><i class="bi bi-person-badge"></i> Назначить</button>
+                        <form method="POST" action="/admin/departments/{{ d.id }}/delete" class="d-inline" onsubmit="return confirm('Удалить отдел?')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Модальное окно добавления пользователя -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Добавить пользователя</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="POST" action="/admin/users/create">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3"><label class="form-label">ФИО</label><input type="text" name="full_name" class="form-control" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Логин</label><input type="text" name="username" class="form-control" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Email</label><input type="email" name="email" class="form-control" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Пароль</label><input type="password" name="password" class="form-control" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Роль</label>
+                            <select name="role" class="form-select">
+                                <option value="admin">Администратор</option><option value="secretary">Секретарь</option>
+                                <option value="head_central">Руководитель ЦА</option><option value="head_department">Начальник отдела</option>
+                                <option value="assistant">Помощник</option><option value="executor" selected>Исполнитель</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Отдел</label>
+                            <select name="department_id" class="form-select"><option value="">Без отдела</option>{% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}</select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button><button type="submit" class="btn btn-primary">Сохранить</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна редактирования пользователей -->
+{% for u in users %}
+<div class="modal fade" id="editUser{{ u.uid }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Редактировать {{ u.full_name }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="POST" action="/admin/users/{{ u.uid }}/edit">
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label">ФИО</label><input type="text" name="full_name" class="form-control" value="{{ u.full_name }}" required></div>
+                    <div class="mb-3"><label class="form-label">Email</label><input type="email" name="email" class="form-control" value="{{ u.email }}" required></div>
+                    <div class="mb-3"><label class="form-label">Роль</label>
+                        <select name="role" class="form-select">
+                            <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Администратор</option>
+                            <option value="secretary" {% if u.role == 'secretary' %}selected{% endif %}>Секретарь</option>
+                            <option value="head_central" {% if u.role == 'head_central' %}selected{% endif %}>Руководитель ЦА</option>
+                            <option value="head_department" {% if u.role == 'head_department' %}selected{% endif %}>Начальник отдела</option>
+                            <option value="assistant" {% if u.role == 'assistant' %}selected{% endif %}>Помощник</option>
+                            <option value="executor" {% if u.role == 'executor' %}selected{% endif %}>Исполнитель</option>
+                        </select>
+                    </div>
+                    <div class="mb-3"><label class="form-label">Отдел</label>
+                        <select name="department_id" class="form-select">
+                            <option value="">Без отдела</option>{% for d in departments %}<option value="{{ d.id }}" {% if d.id == u.department_id %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3"><label class="form-label">Новый пароль (оставьте пустым, если не менять)</label><input type="password" name="password" class="form-control" placeholder="Новый пароль"></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary">Сохранить</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Модальные окна назначения руководителя отдела -->
+{% for d in departments %}
+<div class="modal fade" id="setHeadModal{{ d.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Назначить руководителя: {{ d.name }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="POST" action="/admin/departments/{{ d.id }}/set_head">
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label">Выберите руководителя</label>
+                        <select name="head_id" class="form-select" required>
+                            <option value="">-- Выберите --</option>{% for u in users %}{% if u.role == 'head_department' %}<option value="{{ u.uid }}" {% if d.head_id == u.uid %}selected{% endif %}>{{ u.full_name }}</option>{% endif %}{% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button><button type="submit" class="btn btn-primary">Назначить</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}

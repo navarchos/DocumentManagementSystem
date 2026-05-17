@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ order.title }} - ЭДО ЛДПР{% endblock %}
+{% block content %}
+<a href="/orders" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-left"></i> Назад</a>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card p-4 mb-4">
+            <div class="d-flex justify-content-between mb-3">
+                <div><span class="badge bg-primary mb-2">№{{ order.id[:8] }}</span><h3 class="fw-bold">{{ order.title }}</h3></div>
+                <span class="badge-status {% if order.status in ['Утверждено','Закрыто'] %}bg-success{% elif order.status == 'Отклонено' %}bg-danger{% elif order.status == 'На утверждении' %}bg-warning text-dark{% else %}bg-primary{% endif %}">{{ order.status }}</span>
+            </div>
+            <div class="row mb-3 py-3 border-top border-bottom">
+                <div class="col-md-3"><small class="text-muted text-uppercase fw-bold d-block" style="font-size:0.6rem;">Автор</small><strong>{{ order.creator_name }}</strong></div>
+                <div class="col-md-3"><small class="text-muted text-uppercase fw-bold d-block" style="font-size:0.6rem;">Срок</small><strong>{{ order.deadline.strftime('%d.%m.%Y') if order.deadline else 'Не указан' }}</strong></div>
+                <div class="col-md-3"><small class="text-muted text-uppercase fw-bold d-block" style="font-size:0.6rem;">Приоритет</small><strong>{{ order.priority }}</strong></div>
+                <div class="col-md-3"><small class="text-muted text-uppercase fw-bold d-block" style="font-size:0.6rem;">Создано</small><strong>{{ order.created_at.strftime('%d.%m.%Y') }}</strong></div>
+            </div>
+            <h6 class="fw-bold text-uppercase text-muted small mb-3">Текст распоряжения</h6>
+            <div class="bg-light p-3 rounded" style="white-space:pre-wrap;">{{ order.content }}</div>
+            {% if order.result %}
+            <div class="mt-4 p-3 bg-success bg-opacity-10 rounded border border-success border-opacity-25">
+                <h6 class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> Результат выполнения</h6>
+                <div style="white-space:pre-wrap;">{{ order.result.content }}</div>
+                <small class="text-muted mt-2 d-block">Подано: {{ order.result.submittedAt[:16] }}</small>
+            </div>
+            {% endif %}
+        </div>
+        <div class="card p-4 mb-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-paperclip"></i> Прикреплённые файлы</h5>
+            {% if files %}
+            <ul class="list-group mb-3">
+                {% for f in files %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <i class="bi bi-file-earmark"></i> {{ f.original_name }}
+                    <a href="/orders/file/{{ f.id }}/download" class="btn btn-sm btn-outline-primary">Скачать</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">Нет прикреплённых файлов</p>
+            {% endif %}
+            <form method="POST" action="/orders/{{ order.id }}/upload" enctype="multipart/form-data">
+                <div class="input-group">
+                    <input type="file" name="file" class="form-control" required>
+                    <button type="submit" class="btn btn-primary">Загрузить</button>
+                </div>
+                <small class="text-muted">Допустимые форматы: pdf, doc, docx, xls, xlsx, txt, jpg, png, zip</small>
+            </form>
+        </div>
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-chat-dots"></i> Комментарии</h5>
+            <div class="mb-3">
+                {% for c in comments %}
+                <div class="border-bottom pb-2 mb-2">
+                    <strong>{{ c.user_name }}</strong> <small class="text-muted">({{ c.user_role }})</small>
+                    <small class="text-muted float-end">{{ c.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                    <p class="mt-1 mb-0">{{ c.text }}</p>
+                </div>
+                {% else %}
+                <p class="text-muted">Нет комментариев</p>
+                {% endfor %}
+            </div>
+            <form method="POST" action="/orders/{{ order.id }}/comment">
+                <textarea name="comment_text" class="form-control mb-2" rows="3" placeholder="Ваш комментарий..."></textarea>
+                <button type="submit" class="btn btn-outline-primary btn-sm">Добавить комментарий</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3">Действия</h5>
+
+            {% if current_user.role == 'head_central' and order.status == 'На утверждении' %}
+            <form method="POST" action="/orders/{{ order.id }}/status"><input type="hidden" name="status" value="Утверждено"><button class="btn btn-success w-100 mb-2"><i class="bi bi-check-circle"></i> Утвердить</button></form>
+            <form method="POST" action="/orders/{{ order.id }}/status"><input type="hidden" name="status" value="Отклонено"><input type="text" name="comment" class="form-control form-control-sm mb-2" placeholder="Причина отклонения"><button class="btn btn-danger w-100"><i class="bi bi-x-circle"></i> Отклонить</button></form>
+            {% endif %}
+
+            {% if current_user.role == 'secretary' and order.status == 'Утверждено' %}
+            <form method="POST" action="/orders/{{ order.id }}/status"><input type="hidden" name="status" value="В отделе"><select name="department_id" class="form-select form-select-sm mb-2" required><option value="">Выберите отдел...</option>{% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}</select><button class="btn btn-primary w-100"><i class="bi bi-building"></i> Назначить отдел</button></form>
+            {% endif %}
+
+            {% if current_user.role == 'head_department' and order.status == 'В отделе' %}
+            <form method="POST" action="/orders/{{ order.id }}/status"><input type="hidden" name="status" value="Назначен исполнитель"><select name="executor_id" class="form-select form-select-sm mb-2" required><option value="">Выберите исполнителя...</option>{% for u in dept_users %}<option value="{{ u.uid }}">{{ u.full_name }}</option>{% endfor %}</select><button class="btn btn-primary w-100"><i class="bi bi-person-check"></i> Назначить</button></form>
+            {% endif %}
+
+            {% if current_user.role == 'executor' and order.status == 'Назначен исполнитель' and order.assigned_executor_id == current_user.uid %}
+            <form method="POST" action="/orders/{{ order.id }}/status"><input type="hidden" name="status" value="В работе"><button class="btn btn-primary w-100"><i class="bi bi-play-circle"></i> Взять в работу</button></form>
+            {% endif %}
+
+            {% if current_user.role == 'executor' and order.status == 'В работе' and order.assigned_executor_id == current_user.uid %}
+            <form method="POST" action="/orders/{{ order.id }}/submit"><textarea name="result_content" class="form-control form-control-sm mb-2" rows="4" placeholder="Опишите результат выполнения..." required></textarea><button class="btn btn-success w-100"><i class="bi bi-check-circle"></i> Сдать работу</button></form>
+            {% endif %}
+
+            {% if current_user.role == 'head_department' and order.status == 'Готово к проверке' %}
+            <form method="POST" action="/orders/{{ order.id }}/status"><input type="hidden" name="status" value="Подтверждено"><button class="btn btn-success w-100 mb-2"><i class="bi bi-check-circle"></i> Подтвердить</button></form>
+            <form method="POST" action="/orders/{{ order.id }}/status"><input type="hidden" name="status" value="На доработке"><input type="text" name="comment" class="form-control form-control-sm mb-2" placeholder="Причина доработки"><button class="btn btn-warning w-100"><i class="bi bi-arrow-counterclockwise"></i> На доработку</button></form>
+            <form method="POST" action="/orders/{{ order.id }}/status"><input type="hidden" name="status" value="Отклонено"><input type="text" name="comment" class="form-control form-control-sm mb-2" placeholder="Причина отклонения"><button class="btn btn-danger w-100"><i class="bi bi-x-circle"></i> Отклонить работу</button></form>
+            {% endif %}
+
+            {% if current_user.role == 'head_central' and order.status == 'Подтверждено' %}
+            <form method="POST" action="/orders/{{ order.id }}/status"><input type="hidden" name="status" value="Закрыто"><button class="btn btn-success w-100"><i class="bi bi-check-circle"></i> Закрыть</button></form>
+            <form method="POST" action="/orders/{{ order.id }}/status" class="mt-2"><input type="hidden" name="status" value="На доработке"><input type="text" name="comment" class="form-control form-control-sm mb-2" placeholder="Причина доработки"><button class="btn btn-warning w-100"><i class="bi bi-arrow-counterclockwise"></i> На доработку</button></form>
+            {% endif %}
+
+            {% if current_user.role == 'assistant' and order.status == 'На утверждении' %}
+            <form method="POST" action="/orders/{{ order.id }}/status"><input type="hidden" name="status" value="Отозвано"><button class="btn btn-secondary w-100"><i class="bi bi-arrow-return-left"></i> Отозвать распоряжение</button></form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
