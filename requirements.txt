@@ -1,6 +1,9 @@
 Flask
 Flask-SQLAlchemy
+Flask-Migrate
 pandas
 openpyxl
 psycopg2-binary
+python-dotenv
 Werkzeug
+boto3
