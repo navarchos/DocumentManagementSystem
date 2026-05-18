@@ -1,6 +1,6 @@
-# PostgreSQL setup
+# Database setup
 
-The application requires PostgreSQL. Put the connection string into `.env`:
+The application tries to use PostgreSQL first. Put the connection string into `.env`:
 
 ```text
 DATABASE_URL=postgresql://edo_user:password@localhost:5432/edo_ldpr
@@ -13,6 +13,9 @@ $env:DATABASE_URL = "postgresql://edo_user:password@localhost:5432/edo_ldpr"
 $env:FLASK_APP = "app.py"
 ```
 
+If PostgreSQL is unavailable or `DATABASE_URL` is missing, the application falls
+back to a local SQLite database at `instance\edo_ldpr.db`.
+
 Install dependencies:
 
 ```powershell
@@ -24,6 +27,9 @@ Apply the database schema:
 ```powershell
 .\.venv\Scripts\python.exe -m flask db upgrade
 ```
+
+Migrations are needed for PostgreSQL. In SQLite fallback mode, the application
+creates the local tables automatically on startup.
 
 Seed default departments and demo users if the database is empty:
 

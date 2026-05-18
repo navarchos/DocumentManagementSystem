@@ -7,6 +7,8 @@ from flask import Flask
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
 
 
 load_dotenv()
@@ -23,14 +25,31 @@ app.config['S3_REGION'] = os.environ.get('S3_REGION', 'ru-central1')
 app.config['S3_ACCESS_KEY_ID'] = os.environ.get('AWS_ACCESS_KEY_ID')
 app.config['S3_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY')
 
-database_url = os.environ.get('DATABASE_URL')
-if not database_url:
-    raise RuntimeError('DATABASE_URL is required and must point to PostgreSQL.')
-if database_url.startswith('postgres://'):
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
-if not database_url.startswith('postgresql://'):
-    raise RuntimeError('DATABASE_URL must use the postgresql:// scheme.')
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+LOCAL_SQLITE_URI = 'sqlite:///edo_ldpr.db'
+
+
+def get_database_uri():
+    database_url = os.environ.get('DATABASE_URL')
+    if not database_url:
+        return LOCAL_SQLITE_URI
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    if not database_url.startswith('postgresql://'):
+        return LOCAL_SQLITE_URI
+
+    engine = create_engine(database_url, connect_args={'connect_timeout': 3})
+    try:
+        with engine.connect() as connection:
+            connection.execute(text('SELECT 1'))
+        return database_url
+    except SQLAlchemyError as error:
+        print(f'PostgreSQL is unavailable, falling back to SQLite: {error}')
+        return LOCAL_SQLITE_URI
+    finally:
+        engine.dispose()
+
+
+app.config['SQLALCHEMY_DATABASE_URI'] = get_database_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -43,6 +62,12 @@ sys.modules.setdefault('app', sys.modules[__name__])
 from application.database import seed_initial_data  # noqa: E402
 import application.context  # noqa: E402,F401
 import application.routes  # noqa: E402,F401
+
+
+with app.app_context():
+    if db.engine.dialect.name == 'sqlite':
+        db.create_all()
+        seed_initial_data()
 
 
 @app.cli.command('seed-db')
