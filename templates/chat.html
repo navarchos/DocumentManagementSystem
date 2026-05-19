@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}AI-помощник - ЭДО ЛДПР{% endblock %}
+{% block content %}
+<h2 class="fw-bold mb-4"><i class="bi bi-robot me-2"></i>AI-помощник</h2>
+
+{% if not rag_enabled %}
+<div class="alert alert-warning">
+    <strong>Чат-бот временно недоступен.</strong>
+    Для работы нужны PostgreSQL с расширением <code>pgvector</code> и заданные
+    переменные окружения <code>YANDEX_API_KEY</code> и <code>YANDEX_FOLDER_ID</code>.
+</div>
+{% else %}
+<div class="row g-3" id="chatRoot" data-active-session="">
+    <div class="col-md-3">
+        <div class="card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong>Беседы</strong>
+                <button id="newSessionBtn" class="btn btn-sm btn-primary" type="button"><i class="bi bi-plus-lg"></i></button>
+            </div>
+            <div id="sessionsList" class="list-group list-group-flush">
+                {% for s in chat_sessions %}
+                <button type="button" class="list-group-item list-group-item-action text-start session-item" data-session-id="{{ s.id }}">
+                    <div class="fw-semibold text-truncate">{{ s.title or 'Новый чат' }}</div>
+                    <small class="text-muted">{{ s.updated_at.strftime('%d.%m.%Y %H:%M') if s.updated_at else '' }}</small>
+                </button>
+                {% endfor %}
+                {% if not chat_sessions %}
+                <p class="text-muted small mb-0 px-2 py-3">Бесед ещё нет — отправьте первое сообщение.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-9">
+        <div class="card d-flex flex-column" style="height: calc(100vh - 220px); min-height: 480px;">
+            <div id="messages" class="flex-grow-1 p-4" style="overflow-y: auto;">
+                <div class="text-center text-muted py-5" id="emptyState">
+                    Задайте вопрос по распоряжениям, истории работы или приложенным файлам.<br>
+                    <small>Бот видит только те данные, к которым у вас есть доступ.</small>
+                </div>
+            </div>
+            <form id="chatForm" class="border-top p-3 d-flex gap-2">
+                <textarea id="messageInput" class="form-control" rows="2" placeholder="Спросите что-нибудь..." maxlength="4000" required></textarea>
+                <button type="submit" class="btn btn-primary px-4" id="sendBtn">
+                    <i class="bi bi-send"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const root = document.getElementById('chatRoot');
+    const sessionsList = document.getElementById('sessionsList');
+    const messagesBox = document.getElementById('messages');
+    const emptyState = document.getElementById('emptyState');
+    const form = document.getElementById('chatForm');
+    const input = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const newBtn = document.getElementById('newSessionBtn');
+
+    function setActiveSession(id) {
+        root.dataset.activeSession = id || '';
+        sessionsList.querySelectorAll('.session-item').forEach(btn => {
+            btn.classList.toggle('active', String(btn.dataset.sessionId) === String(id));
+        });
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
+    function renderSources(sources) {
+        if (!sources || !sources.length) return '';
+        const items = sources.map((s, i) => {
+            const idx = i + 1;
+            const orderLabel = escapeHtml((s.order_title || ('Распоряжение ' + s.order_id.slice(0, 8))));
+            const orderLink = '<a href="' + escapeHtml(s.order_url) + '" target="_blank">' + orderLabel + '</a>';
+            let fileLink = '';
+            if (s.file_url) {
+                fileLink = ' &middot; <a href="' + escapeHtml(s.file_url) + '" target="_blank">' + escapeHtml(s.file_name || 'файл') + '</a>';
+            }
+            const typeLabel = ({
+                'order_content': 'распоряжение',
+                'order_history': 'история',
+                'order_file': 'файл'
+            })[s.source_type] || s.source_type;
+            return '<li>[' + idx + '] ' + orderLink + fileLink + ' <span class="text-muted">(' + escapeHtml(typeLabel) + ')</span></li>';
+        }).join('');
+        return '<div class="mt-2 small"><div class="text-muted mb-1">Источники:</div><ol class="mb-0 ps-3">' + items + '</ol></div>';
+    }
+
+    function appendMessage(role, content, sources) {
+        emptyState && emptyState.remove();
+        const wrap = document.createElement('div');
+        wrap.className = 'mb-3 d-flex ' + (role === 'user' ? 'justify-content-end' : 'justify-content-start');
+        const bubble = document.createElement('div');
+        bubble.className = 'p-3 rounded-3 ' + (role === 'user' ? 'bg-primary text-white' : 'bg-light');
+        bubble.style.maxWidth = '85%';
+        bubble.style.whiteSpace = 'pre-wrap';
+        bubble.innerHTML = escapeHtml(content) + renderSources(sources);
+        wrap.appendChild(bubble);
+        messagesBox.appendChild(wrap);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    function clearMessages() {
+        messagesBox.innerHTML = '';
+    }
+
+    async function loadSession(id) {
+        if (!id) {
+            clearMessages();
+            messagesBox.innerHTML = '<div class="text-center text-muted py-5">Новый чат. Отправьте сообщение, чтобы начать.</div>';
+            setActiveSession('');
+            return;
+        }
+        try {
+            const resp = await fetch('/chat/sessions/' + id);
+            if (!resp.ok) throw new Error('Не удалось загрузить беседу');
+            const data = await resp.json();
+            clearMessages();
+            data.messages.forEach(m => appendMessage(m.role, m.content, m.sources));
+            setActiveSession(id);
+        } catch (e) {
+            alert(e.message);
+        }
+    }
+
+    async function reloadSessions() {
+        const resp = await fetch('/chat/sessions');
+        const data = await resp.json();
+        sessionsList.innerHTML = '';
+        if (!data.sessions || !data.sessions.length) {
+            const p = document.createElement('p');
+            p.className = 'text-muted small mb-0 px-2 py-3';
+            p.textContent = 'Бесед ещё нет — отправьте первое сообщение.';
+            sessionsList.appendChild(p);
+            return;
+        }
+        data.sessions.forEach(s => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'list-group-item list-group-item-action text-start session-item';
+            btn.dataset.sessionId = s.id;
+            btn.innerHTML = '<div class="fw-semibold text-truncate">' + escapeHtml(s.title) + '</div>'
+                + '<small class="text-muted">' + escapeHtml((s.updated_at || '').replace('T', ' ').slice(0, 16)) + '</small>';
+            btn.addEventListener('click', () => loadSession(s.id));
+            sessionsList.appendChild(btn);
+        });
+        setActiveSession(root.dataset.activeSession);
+    }
+
+    sessionsList.querySelectorAll('.session-item').forEach(btn => {
+        btn.addEventListener('click', () => loadSession(btn.dataset.sessionId));
+    });
+
+    newBtn.addEventListener('click', () => loadSession(''));
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+        sendBtn.disabled = true;
+        input.disabled = true;
+        appendMessage('user', text);
+        input.value = '';
+        const thinking = document.createElement('div');
+        thinking.className = 'mb-3 d-flex justify-content-start';
+        thinking.innerHTML = '<div class="p-3 rounded-3 bg-light text-muted"><i class="bi bi-three-dots"></i> думаю...</div>';
+        messagesBox.appendChild(thinking);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+        try {
+            const resp = await fetch('/chat/message', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    message: text,
+                    session_id: root.dataset.activeSession || null,
+                })
+            });
+            thinking.remove();
+            const data = await resp.json();
+            if (!resp.ok) {
+                appendMessage('assistant', data.error || 'Ошибка запроса');
+                return;
+            }
+            appendMessage('assistant', data.answer, data.sources);
+            const wasNew = !root.dataset.activeSession;
+            setActiveSession(data.session_id);
+            if (wasNew) {
+                await reloadSessions();
+                setActiveSession(data.session_id);
+            }
+        } catch (err) {
+            thinking.remove();
+            appendMessage('assistant', 'Сетевая ошибка: ' + err.message);
+        } finally {
+            sendBtn.disabled = false;
+            input.disabled = false;
+            input.focus();
+        }
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            form.requestSubmit();
+        }
+    });
+})();
+</script>
+
+<style>
+    #sessionsList .session-item.active {
+        background-color: #e7ecff;
+        border-color: #003399;
+    }
+</style>
+{% endif %}
+{% endblock %}

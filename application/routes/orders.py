@@ -14,6 +14,16 @@ from application.notifications_utils import create_notification
 from application.services import get_orders_for_user
 
 
+def _schedule_reindex_order(order_id):
+    from application.rag.indexer import schedule_reindex_order
+    schedule_reindex_order(order_id)
+
+
+def _schedule_reindex_file(order_file_id):
+    from application.rag.indexer import schedule_reindex_file
+    schedule_reindex_file(order_file_id)
+
+
 @app.route('/orders')
 @login_required
 def orders():
@@ -134,6 +144,7 @@ def create_order():
     heads = User.query.filter_by(role='head_central').all()
     for h in heads:
         create_notification(h.uid, f'Новое распоряжение "{title}" ожидает утверждения', f'/orders/{order_id}')
+    _schedule_reindex_order(order_id)
     flash('Распоряжение создано', 'success')
     return redirect(url_for('orders'))
 
@@ -259,6 +270,7 @@ def update_order_status(order_id):
         )
         db.session.add(history)
         db.session.commit()
+        _schedule_reindex_order(order_id)
         flash('Статус обновлён', 'success')
     else:
         flash('Действие запрещено', 'danger')
@@ -296,6 +308,7 @@ def submit_order_result(order_id):
     )
     db.session.add(history)
     db.session.commit()
+    _schedule_reindex_order(order_id)
 
     if order.assigned_department_id:
         dept_head = User.query.filter_by(department_id=order.assigned_department_id, role='head_department').first()
@@ -359,6 +372,7 @@ def upload_file(order_id):
         )
         db.session.add(order_file)
         db.session.commit()
+        _schedule_reindex_file(order_file.id)
         flash('Файл загружен', 'success')
     else:
         flash('Недопустимый тип файла', 'danger')

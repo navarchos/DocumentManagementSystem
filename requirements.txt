@@ -7,3 +7,8 @@ psycopg2-binary
 python-dotenv
 Werkzeug
 boto3
+pgvector
+httpx
+tenacity
+pypdf
+python-docx

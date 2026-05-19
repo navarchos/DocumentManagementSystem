@@ -1,1 +1,1 @@
-from application.routes import admin, auth, dashboard, departments, notifications, orders  # noqa: F401
+from application.routes import admin, auth, chat, dashboard, departments, notifications, orders  # noqa: F401

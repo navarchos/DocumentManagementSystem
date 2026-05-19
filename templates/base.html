@@ -54,6 +54,7 @@
                 <nav class="nav flex-column">
                     <a class="nav-link {{ 'active' if request.path == '/' }}" href="/"><i class="bi bi-speedometer2 me-2"></i>Рабочий стол</a>
                     <a class="nav-link {{ 'active' if '/orders' in request.path }}" href="/orders"><i class="bi bi-file-text me-2"></i>Распоряжения</a>
+                    <a class="nav-link {{ 'active' if '/chat' in request.path }}" href="/chat"><i class="bi bi-robot me-2"></i>AI-помощник</a>
                     {% if current_user.role in ['head_department', 'admin'] %}
                     <a class="nav-link {{ 'active' if request.path == '/department' }}" href="/department"><i class="bi bi-people me-2"></i>Отдел</a>
                     {% endif %}
