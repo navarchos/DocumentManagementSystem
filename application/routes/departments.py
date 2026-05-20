@@ -31,6 +31,12 @@ def department():
     return render_template('department.html', department=department_record, users=users, orders=orders)
 
 
+def _admin_departments_redirect():
+    if request.form.get('next') == '/admin':
+        return redirect(url_for('admin_panel'))
+    return redirect(url_for('department'))
+
+
 @app.route('/department/create', methods=['POST'])
 @login_required
 @role_required('admin')
@@ -38,13 +44,13 @@ def create_department():
     name = request.form.get('name', '').strip()
     if not name:
         flash('Введите название отдела', 'danger')
-        return redirect(url_for('department'))
+        return _admin_departments_redirect()
     dept_id = 'dept-' + str(uuid.uuid4())[:8]
     new_dept = Department(id=dept_id, name=name)
     db.session.add(new_dept)
     db.session.commit()
     flash('Отдел создан', 'success')
-    return redirect(url_for('department'))
+    return _admin_departments_redirect()
 
 
 @app.route('/department/<dept_id>')
@@ -54,10 +60,21 @@ def department_details(dept_id):
     dept = db.session.get(Department, dept_id)
     if not dept:
         flash('Отдел не найден', 'danger')
-        return redirect(url_for('department'))
+        return redirect(url_for('admin_panel'))
+    if dept.head_id:
+        head = db.session.get(User, dept.head_id)
+        dept.head_name = head.full_name if head else None
+    else:
+        dept.head_name = None
     users = User.query.filter_by(department_id=dept_id).all()
     orders = Order.query.filter_by(assigned_department_id=dept_id).order_by(Order.created_at.desc()).all()
-    return render_template('department.html', department=dept, users=users, orders=orders)
+    return render_template(
+        'department.html',
+        department=dept,
+        users=users,
+        orders=orders,
+        back_to_admin=True,
+    )
 
 
 @app.route('/admin/departments/<dept_id>/set_head', methods=['POST'])
@@ -67,15 +84,15 @@ def set_department_head(dept_id):
     head_id = request.form.get('head_id')
     if not head_id:
         flash('Выберите руководителя', 'danger')
-        return redirect(url_for('department'))
+        return _admin_departments_redirect()
     dept = db.session.get(Department, dept_id)
     if not dept:
         flash('Отдел не найден', 'danger')
-        return redirect(url_for('department'))
+        return _admin_departments_redirect()
     dept.head_id = head_id
     db.session.commit()
     flash('Руководитель назначен', 'success')
-    return redirect(url_for('department'))
+    return _admin_departments_redirect()
 
 
 @app.route('/admin/departments/<dept_id>/delete', methods=['POST'])

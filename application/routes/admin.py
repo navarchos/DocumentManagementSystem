@@ -14,6 +14,12 @@ from application.models import Department, User
 def admin_panel():
     users = User.query.all()
     departments = Department.query.all()
+    for dept in departments:
+        if dept.head_id:
+            head = db.session.get(User, dept.head_id)
+            dept.head_name = head.full_name if head else None
+        else:
+            dept.head_name = None
     return render_template('admin.html', users=users, departments=departments)
 
 

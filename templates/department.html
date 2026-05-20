@@ -1,7 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Мой отдел - ЭДО ЛДПР{% endblock %}
+{% block title %}{% if back_to_admin %}Отдел{% else %}Мой отдел{% endif %} - ЭДО ЛДПР{% endblock %}
 {% block content %}
-<h2 class="fw-bold mb-4"><i class="bi bi-building me-2"></i>Мой отдел</h2>
+{% if back_to_admin %}
+<a href="/admin" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-left me-1"></i>К администрированию</a>
+{% endif %}
+<h2 class="fw-bold mb-4"><i class="bi bi-building me-2"></i>{% if back_to_admin %}Отдел{% else %}Мой отдел{% endif %}</h2>
 
 {% if department %}
 <div class="card p-4 mb-4">

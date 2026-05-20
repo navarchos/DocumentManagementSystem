@@ -35,18 +35,22 @@
 <div class="card p-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fw-bold mb-0">Отделы</h5>
-        <span class="badge bg-primary">{{ departments|length }}</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary">{{ departments|length }}</span>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addDeptModal"><i class="bi bi-plus-lg"></i> Добавить отдел</button>
+        </div>
     </div>
+    {% if departments %}
     <div class="table-responsive">
         <table class="table table-hover">
             <thead><tr><th>Название</th><th>Руководитель</th><th>Действия</th></tr></thead>
             <tbody>
                 {% for d in departments %}
                 <tr>
-                    <td><strong>{{ d.name }}</strong></td>
-                    <td>{% for u in users %}{% if u.uid == d.head_id %}{{ u.full_name }}{% endif %}{% endfor %}</td>
+                    <td><a href="/department/{{ d.id }}" class="fw-bold text-decoration-none">{{ d.name }}</a></td>
+                    <td>{% if d.head_name %}{{ d.head_name }}{% else %}<span class="text-muted">Не назначен</span>{% endif %}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#setHeadModal{{ d.id }}"><i class="bi bi-person-badge"></i> Назначить</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#setHeadModal{{ d.id }}"><i class="bi bi-person-badge"></i> Назначить</button>
                         <form method="POST" action="/admin/departments/{{ d.id }}/delete" class="d-inline" onsubmit="return confirm('Удалить отдел?')">
                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                         </form>
@@ -56,6 +60,9 @@
             </tbody>
         </table>
     </div>
+    {% else %}
+    <p class="text-muted text-center py-4 mb-0">Нет отделов. Создайте первый отдел.</p>
+    {% endif %}
 </div>
 
 <!-- Модальное окно добавления пользователя -->
@@ -122,6 +129,22 @@
 </div>
 {% endfor %}
 
+<!-- Модальное окно добавления отдела -->
+<div class="modal fade" id="addDeptModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Добавить отдел</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="POST" action="/department/create">
+                <input type="hidden" name="next" value="/admin">
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label">Название отдела</label><input type="text" name="name" class="form-control" required></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button><button type="submit" class="btn btn-primary">Сохранить</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Модальные окна назначения руководителя отдела -->
 {% for d in departments %}
 <div class="modal fade" id="setHeadModal{{ d.id }}" tabindex="-1">
@@ -129,6 +152,7 @@
         <div class="modal-content">
             <div class="modal-header"><h5>Назначить руководителя: {{ d.name }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <form method="POST" action="/admin/departments/{{ d.id }}/set_head">
+                <input type="hidden" name="next" value="/admin">
                 <div class="modal-body">
                     <div class="mb-3"><label class="form-label">Выберите руководителя</label>
                         <select name="head_id" class="form-select" required>
