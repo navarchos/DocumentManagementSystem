@@ -106,7 +106,42 @@
             {% if current_user.role == 'assistant' and order.status == 'На утверждении' %}
             <form method="POST" action="/orders/{{ order.id }}/status"><input type="hidden" name="status" value="Отозвано"><button class="btn btn-secondary w-100"><i class="bi bi-arrow-return-left"></i> Отозвать распоряжение</button></form>
             {% endif %}
+
+            {% if current_user.role == 'head_central' and order.status == 'Закрыто' %}
+            <hr class="mt-3">
+            <button type="button" class="btn btn-outline-danger w-100 mt-1" data-bs-toggle="modal" data-bs-target="#deleteOrderModal">
+                <i class="bi bi-trash3"></i> Удалить распоряжение
+            </button>
+            {% endif %}
         </div>
     </div>
 </div>
+
+{% if current_user.role == 'head_central' and order.status == 'Закрыто' %}
+<div class="modal fade" id="deleteOrderModal" tabindex="-1" aria-labelledby="deleteOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteOrderModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Подтверждение удаления</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <form method="POST" action="/orders/{{ order.id }}/delete">
+                <div class="modal-body">
+                    <p>Вы собираетесь <strong>безвозвратно удалить</strong> распоряжение:</p>
+                    <p class="fw-bold">«{{ order.title }}»</p>
+                    <p class="text-danger small">Будут удалены само распоряжение, все прикреплённые файлы, история и комментарии.</p>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label fw-semibold">Введите ваш пароль для подтверждения</label>
+                        <input type="password" class="form-control" id="confirmPassword" name="confirm_password" placeholder="Пароль" required autocomplete="current-password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash3-fill"></i> Удалить безвозвратно</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

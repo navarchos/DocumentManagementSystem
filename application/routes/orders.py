@@ -4,11 +4,12 @@ from io import BytesIO
 
 import pandas as pd
 from flask import flash, redirect, render_template, request, send_file, session, url_for
+from werkzeug.security import check_password_hash
 from werkzeug.utils import secure_filename
 
 from app import app, db
 from application.decorators import login_required, role_required
-from application.file_utils import allowed_file, build_storage_path, save_order_file, send_order_file
+from application.file_utils import allowed_file, build_storage_path, is_s3_storage_enabled, get_s3_client, save_order_file, send_order_file
 from application.models import Comment, Department, Order, OrderFile, OrderHistory, User
 from application.notifications_utils import create_notification
 from application.services import get_orders_for_user
@@ -377,6 +378,56 @@ def upload_file(order_id):
     else:
         flash('Недопустимый тип файла', 'danger')
     return redirect(url_for('order_details', order_id=order_id))
+
+
+@app.route('/orders/<order_id>/delete', methods=['POST'])
+@login_required
+@role_required('head_central')
+def delete_order(order_id):
+    order = db.session.get(Order, order_id)
+    if not order:
+        flash('Распоряжение не найдено', 'danger')
+        return redirect(url_for('orders'))
+
+    if order.status != 'Закрыто':
+        flash('Удаление разрешено только для закрытых распоряжений', 'danger')
+        return redirect(url_for('order_details', order_id=order_id))
+
+    password = request.form.get('confirm_password', '')
+    user = db.session.get(User, session['user_id'])
+    if not user or not check_password_hash(user.password, password):
+        flash('Неверный пароль. Удаление отменено', 'danger')
+        return redirect(url_for('order_details', order_id=order_id))
+
+    files = OrderFile.query.filter_by(order_id=order_id).all()
+    if is_s3_storage_enabled():
+        s3 = get_s3_client()
+        bucket = app.config['S3_BUCKET_NAME']
+        for f in files:
+            try:
+                s3.delete_object(Bucket=bucket, Key=f.filepath)
+            except Exception:
+                app.logger.warning('Could not delete S3 object %s', f.filepath)
+
+    for f in files:
+        db.session.delete(f)
+
+    try:
+        from application.models import RagChunk, RagDocument
+        rag_docs = RagDocument.query.filter_by(order_id=order_id).all()
+        for doc in rag_docs:
+            RagChunk.query.filter_by(document_id=doc.id).delete()
+            db.session.delete(doc)
+    except Exception:
+        pass
+
+    Comment.query.filter_by(order_id=order_id).delete()
+    OrderHistory.query.filter_by(order_id=order_id).delete()
+    db.session.delete(order)
+    db.session.commit()
+
+    flash(f'Распоряжение «{order.title}» и все его файлы удалены', 'success')
+    return redirect(url_for('orders'))
 
 
 @app.route('/orders/file/<int:file_id>/download')
