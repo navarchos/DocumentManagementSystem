@@ -12,3 +12,4 @@ httpx
 tenacity
 pypdf
 python-docx
+gunicorn
