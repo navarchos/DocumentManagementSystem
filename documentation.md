@@ -18,6 +18,7 @@
 10. [Структура проекта](#10-структура-проекта)
 11. [Модели данных](#11-модели-данных)
 12. [Маршруты (API)](#12-маршруты-api)
+13. [Тестирование](#13-тестирование)
 
 ---
 
@@ -539,3 +540,66 @@ DocumentManagementSystem/
 | POST | `/admin/departments/create` | Создать отдел | `admin` |
 | POST | `/admin/departments/<id>/edit` | Редактировать отдел | `admin` |
 | POST | `/admin/departments/<id>/delete` | Удалить отдел | `admin` |
+
+---
+
+## 13. Тестирование
+
+Проект покрыт автоматическими тестами на базе **pytest**. Тесты расположены в папке `tests/` и не требуют запущенной базы данных PostgreSQL или доступа к внешним сервисам — для изоляции используется SQLite в памяти.
+
+### Зависимости
+
+```bash
+pip install pytest pytest-flask
+```
+
+### Запуск тестов
+
+```bash
+# Запустить все тесты
+python -m pytest tests/ -v
+
+# Запустить конкретный файл
+python -m pytest tests/test_rag_chunker.py -v
+
+# Запустить конкретный тест
+python -m pytest tests/test_auth_routes.py::TestLoginPost::test_valid_credentials_redirect_to_dashboard -v
+```
+
+### Структура тестов
+
+```
+tests/
+├── conftest.py               # Фикстуры: Flask-приложение, SQLite в памяти, тестовый клиент
+├── test_models.py            # SQLAlchemy-модели (Department, User, Order, ...)
+├── test_file_utils.py        # Утилиты работы с файлами и S3
+├── test_decorators.py        # Декораторы login_required, role_required
+├── test_services.py          # Бизнес-логика: фильтрация распоряжений, статистика
+├── test_rag_chunker.py       # RAG: разбивка текста на чанки
+├── test_rag_extractors.py    # RAG: извлечение текста из документов
+├── test_notifications.py     # Создание и подсчёт уведомлений
+├── test_auth_routes.py       # Маршруты /login, /logout
+└── test_database.py          # Начальное заполнение базы (seed)
+```
+
+### Описание тестовых модулей
+
+| Файл | Что тестируется | Кол-во тестов |
+|---|---|---|
+| `test_models.py` | Создание записей, ограничения уникальности, значения по умолчанию | 11 |
+| `test_file_utils.py` | `allowed_file()`, `build_storage_path()`, `is_s3_storage_path()`, `is_s3_storage_enabled()` | 14 |
+| `test_decorators.py` | Редирект неаутентифицированных пользователей, проверка ролей, сохранение имени функции | 6 |
+| `test_services.py` | `get_orders_for_user()` по всем ролям, `get_stats()`, `get_overdue_orders()` | 7 |
+| `test_rag_chunker.py` | `chunk_text()`, `_split_paragraphs()`, `_split_sentences()`, перекрытие чанков, русский текст | 22 |
+| `test_rag_extractors.py` | `extract_order_content()`, `extract_order_history()`, `_extract_txt()`, работа без S3 | 18 |
+| `test_notifications.py` | `create_notification()`, `get_unread_count()`, изоляция прочитанных уведомлений | 6 |
+| `test_auth_routes.py` | GET/POST `/login`, `/logout`, все сид-пользователи, управление сессией | 10 |
+| `test_database.py` | Корректность начальных данных, хэширование паролей, идемпотентность `seed_initial_data()` | 6 |
+| **Итого** | | **105** |
+
+### Принципы изоляции
+
+- **База данных.** Фикстура `app` (scope=`session`) создаёт отдельный движок SQLite в памяти (`sqlite:///:memory:`). Перед каждой тестовой сессией вызываются `db.drop_all()` + `db.create_all()` — это гарантирует актуальность схемы даже при наличии файла `instance/edo_ldpr.db` со старой структурой.
+- **Аутентификация.** Фикстура `auth_client` напрямую заполняет Flask-сессию, минуя форму входа, что позволяет тестировать защищённые маршруты без дублирования логики.
+- **Внешние сервисы.** S3 (`S3_BUCKET_NAME=None`) и Yandex API не задействуются — соответствующие пути кода возвращают `None` или `RuntimeError`, которые тесты явно проверяют.
+- **Чистота данных.** Тесты, изменяющие БД, откатывают транзакцию (`db.session.rollback()`) или удаляют созданные записи в teardown-блоке фикстуры.
