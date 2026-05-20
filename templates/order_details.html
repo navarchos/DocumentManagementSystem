@@ -15,15 +15,24 @@
                 <div class="col-md-3"><small class="text-muted text-uppercase fw-bold d-block" style="font-size:0.6rem;">Срок</small><strong>{{ order.deadline.strftime('%d.%m.%Y') if order.deadline else 'Не указан' }}</strong></div>
                 <div class="col-md-3"><small class="text-muted text-uppercase fw-bold d-block" style="font-size:0.6rem;">Приоритет</small><strong>{{ order.priority }}</strong></div>
                 <div class="col-md-3"><small class="text-muted text-uppercase fw-bold d-block" style="font-size:0.6rem;">Создано</small><strong>{{ order.created_at.strftime('%d.%m.%Y') }}</strong></div>
+                {% if order.revision_count %}
+                <div class="col-md-3 mt-2"><small class="text-muted text-uppercase fw-bold d-block" style="font-size:0.6rem;">Итераций доработки</small><strong class="text-warning">{{ order.revision_count }}</strong></div>
+                {% endif %}
             </div>
             <h6 class="fw-bold text-uppercase text-muted small mb-3">Текст распоряжения</h6>
             <div class="bg-light p-3 rounded" style="white-space:pre-wrap;">{{ order.content }}</div>
             {% if order.result %}
+            {% set results = order.result if order.result is iterable and order.result is not string and order.result is not mapping else [order.result] %}
+            {% for r in results | reverse %}
             <div class="mt-4 p-3 rounded border result-box">
-                <h6 class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> Результат выполнения</h6>
-                <div style="white-space:pre-wrap;">{{ order.result.content }}</div>
-                <small class="text-muted mt-2 d-block">Подано: {{ order.result.submittedAt[:16] }}</small>
+                <h6 class="text-success fw-bold">
+                    <i class="bi bi-check-circle-fill"></i>
+                    {% if results | length > 1 %}Версия {{ r.revision }} {% if loop.first %}<span class="badge bg-success ms-1" style="font-size:0.6rem;">последняя</span>{% endif %}{% else %}Результат выполнения{% endif %}
+                </h6>
+                <div style="white-space:pre-wrap;">{{ r.content }}</div>
+                <small class="text-muted mt-2 d-block">Подано: {{ r.submittedAt[:16] }}</small>
             </div>
+            {% endfor %}
             {% endif %}
         </div>
         <div class="card p-4 mb-4">
@@ -101,6 +110,24 @@
             {% if current_user.role == 'head_central' and order.status == 'Подтверждено' %}
             <form method="POST" action="/orders/{{ order.id }}/status"><input type="hidden" name="status" value="Закрыто"><button class="btn btn-success w-100"><i class="bi bi-check-circle"></i> Закрыть</button></form>
             <form method="POST" action="/orders/{{ order.id }}/status" class="mt-2"><input type="hidden" name="status" value="На доработке"><input type="text" name="comment" class="form-control form-control-sm mb-2" placeholder="Причина доработки"><button class="btn btn-warning w-100"><i class="bi bi-arrow-counterclockwise"></i> На доработку</button></form>
+            {% endif %}
+
+            {% if current_user.role == 'executor' and order.status == 'На доработке' and order.assigned_executor_id == current_user.uid %}
+            <form method="POST" action="/orders/{{ order.id }}/status">
+                <input type="hidden" name="status" value="В работе">
+                <button class="btn btn-warning w-100"><i class="bi bi-arrow-counterclockwise"></i> Вернуть в работу</button>
+            </form>
+            {% endif %}
+
+            {% if current_user.role == 'head_department' and order.status == 'На доработке' %}
+            <form method="POST" action="/orders/{{ order.id }}/status">
+                <input type="hidden" name="status" value="Назначен исполнитель">
+                <select name="executor_id" class="form-select form-select-sm mb-2" required>
+                    <option value="">Выберите исполнителя...</option>
+                    {% for u in dept_users %}<option value="{{ u.uid }}" {% if u.uid == order.assigned_executor_id %}selected{% endif %}>{{ u.full_name }}</option>{% endfor %}
+                </select>
+                <button class="btn btn-primary w-100"><i class="bi bi-person-check"></i> Переназначить исполнителя</button>
+            </form>
             {% endif %}
 
             {% if current_user.role == 'assistant' and order.status == 'На утверждении' %}

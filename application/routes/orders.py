@@ -219,6 +219,24 @@ def update_order_status(order_id):
         dept_head = User.query.filter_by(department_id=order.assigned_department_id, role='head_department').first()
         if dept_head:
             create_notification(dept_head.uid, f'Исполнитель приступил к работе над "{order.title}"', f'/orders/{order_id}')
+    elif role == 'executor' and cur == 'На доработке' and order.assigned_executor_id == session['user_id']:
+        allowed = True
+        new_status = 'В работе'
+        order.revision_count = (order.revision_count or 0) + 1
+        dept_head = User.query.filter_by(department_id=order.assigned_department_id, role='head_department').first()
+        if dept_head:
+            create_notification(dept_head.uid, f'Исполнитель возобновил работу над "{order.title}"', f'/orders/{order_id}')
+        create_notification(order.created_by, f'Исполнитель приступил к доработке "{order.title}"', f'/orders/{order_id}')
+    elif role == 'head_department' and cur == 'На доработке' and request.form.get('executor_id'):
+        allowed = True
+        new_status = 'Назначен исполнитель'
+        old_executor_id = order.assigned_executor_id
+        extra['assigned_executor_id'] = request.form['executor_id']
+        new_exec = User.query.filter_by(uid=extra['assigned_executor_id']).first()
+        if new_exec:
+            create_notification(new_exec.uid, f'Вам переназначено распоряжение "{order.title}"', f'/orders/{order_id}')
+        if old_executor_id and old_executor_id != extra['assigned_executor_id']:
+            create_notification(old_executor_id, f'Распоряжение "{order.title}" переназначено другому исполнителю', f'/orders/{order_id}')
     elif role == 'head_department' and cur == 'Готово к проверке' and new_status == 'Подтверждено':
         allowed = True
         heads = User.query.filter_by(role='head_central').all()
@@ -294,9 +312,11 @@ def submit_order_result(order_id):
         flash('Опишите результат', 'warning')
         return redirect(url_for('order_details', order_id=order_id))
 
-    result_data = {'content': res, 'submittedAt': datetime.utcnow().isoformat(), 'submittedBy': session['user_id']}
+    existing = order.result if isinstance(order.result, list) else []
+    rev_num = len(existing) + 1
+    entry = {'revision': rev_num, 'content': res, 'submittedAt': datetime.utcnow().isoformat(), 'submittedBy': session['user_id']}
+    order.result = existing + [entry]
     order.status = 'Готово к проверке'
-    order.result = result_data
     db.session.commit()
 
     user = db.session.get(User, session['user_id'])

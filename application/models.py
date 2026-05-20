@@ -40,6 +40,7 @@ class Order(db.Model):
     assigned_executor_id = db.Column(db.String, nullable=True)
     deadline = db.Column(db.Date, nullable=True)
     result = db.Column(db.JSON, nullable=True)
+    revision_count = db.Column(db.Integer, default=0, nullable=False, server_default='0')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
