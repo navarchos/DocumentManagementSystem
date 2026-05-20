@@ -79,8 +79,7 @@
 
     function renderSources(sources) {
         if (!sources || !sources.length) return '';
-        const items = sources.map((s, i) => {
-            const idx = i + 1;
+        const items = sources.map((s) => {
             const orderLabel = escapeHtml((s.order_title || ('Распоряжение ' + s.order_id.slice(0, 8))));
             const orderLink = '<a href="' + escapeHtml(s.order_url) + '" target="_blank">' + orderLabel + '</a>';
             let fileLink = '';
@@ -92,9 +91,9 @@
                 'order_history': 'история',
                 'order_file': 'файл'
             })[s.source_type] || s.source_type;
-            return '<li>[' + idx + '] ' + orderLink + fileLink + ' <span class="text-muted">(' + escapeHtml(typeLabel) + ')</span></li>';
+            return '<li>' + orderLink + fileLink + ' <span class="text-muted">(' + escapeHtml(typeLabel) + ')</span></li>';
         }).join('');
-        return '<div class="mt-2 small"><div class="text-muted mb-1">Источники:</div><ol class="mb-0 ps-3">' + items + '</ol></div>';
+        return '<div class="mt-2 small border-top pt-2"><div class="text-muted mb-1">Связанные документы:</div><ul class="mb-0 ps-3">' + items + '</ul></div>';
     }
 
     function appendMessage(role, content, sources) {

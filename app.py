@@ -107,10 +107,14 @@ with app.app_context():
 
 
 @app.cli.command('seed-db')
-def seed_db():
-    """Create the default departments and users after migrations are applied."""
+@click.option('--force', is_flag=True, help='Re-create demo orders (ord-seed-*) and re-attach files.')
+def seed_db(force):
+    """Seed departments, users, demo orders and files from seed_data/files/."""
+    from application.seed_demo import seed_demo_data
+
     seed_initial_data()
-    print('Initial data seeded.')
+    seed_demo_data(force=force)
+    print('Seed finished.')
 
 
 @app.cli.command('rag-reindex-all')

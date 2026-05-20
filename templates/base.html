@@ -33,7 +33,7 @@
             --bs-link-color: var(--ldpr-cyan);
             --bs-link-hover-color: var(--ldpr-cyan-soft);
             --bs-border-color: var(--ldpr-glass-border);
-            background: var(--ldpr-blue-deep) url("{{ url_for('static', filename='city_scaled.png') }}") center center / cover no-repeat fixed;
+            background: var(--ldpr-blue-deep) url("{{ url_for('static', filename='bright_scaled.png') }}") center center / cover no-repeat fixed;
             color: var(--ldpr-text);
         }
         body.app-layout .navbar {
@@ -104,6 +104,75 @@
         body.app-layout h2, body.app-layout h3, body.app-layout h4, body.app-layout h5, body.app-layout h6,
         body.app-layout .fw-bold:not(.text-danger):not(.text-warning):not(.text-success) { color: var(--ldpr-text); }
         body.app-layout h2 i, body.app-layout h3 i { color: var(--ldpr-gold); }
+        /* Заголовки и кнопки поверх фото (вне карточек) — стекло, как у карточек */
+        body.app-layout .col-md-10 > h2.fw-bold,
+        body.app-layout .col-md-10 > h3.fw-bold {
+            color: var(--ldpr-text) !important;
+            background: var(--ldpr-glass);
+            backdrop-filter: blur(12px);
+            padding: 0.45rem 1.1rem;
+            border-radius: 12px;
+            border: 1px solid var(--ldpr-glass-border);
+            box-shadow: var(--ldpr-shadow);
+            display: inline-block;
+        }
+        body.app-layout .col-md-10 > h2.fw-bold i,
+        body.app-layout .col-md-10 > h3.fw-bold i {
+            color: var(--ldpr-gold) !important;
+        }
+        body.app-layout .col-md-10 > a.btn-outline-secondary,
+        body.app-layout .col-md-10 > .btn-outline-secondary.btn-sm.mb-3 {
+            color: var(--ldpr-cyan-soft) !important;
+            background: var(--ldpr-glass-light) !important;
+            border: 1px solid var(--ldpr-glass-border) !important;
+            backdrop-filter: blur(10px);
+            font-weight: 600;
+            box-shadow: var(--ldpr-shadow);
+        }
+        body.app-layout .col-md-10 > a.btn-outline-secondary:hover,
+        body.app-layout .col-md-10 > .btn-outline-secondary.btn-sm.mb-3:hover {
+            background: rgba(0, 51, 153, 0.88) !important;
+            color: #fff !important;
+            border-color: rgba(255, 215, 0, 0.45) !important;
+        }
+        body.app-layout .col-md-10 > .alert,
+        body.app-layout .col-md-10 > h2.fw-bold + .alert,
+        body.app-layout .col-md-10 > .row + .alert {
+            border-width: 2px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+            font-weight: 500;
+        }
+        body.app-layout .col-md-10 > .alert-success,
+        body.app-layout .col-md-10 > h2.fw-bold + .alert-success,
+        body.app-layout .col-md-10 > .row + .alert-success {
+            background: rgba(0, 75, 52, 0.96) !important;
+            color: #fff !important;
+            border-color: #3dd68c !important;
+        }
+        body.app-layout .col-md-10 > .alert-danger,
+        body.app-layout .col-md-10 > h2.fw-bold + .alert-danger,
+        body.app-layout .col-md-10 > .row + .alert-danger {
+            background: rgba(120, 20, 35, 0.96) !important;
+            color: #fff !important;
+            border-color: #ff6b7a !important;
+        }
+        body.app-layout .col-md-10 > .alert-warning,
+        body.app-layout .col-md-10 > h2.fw-bold + .alert-warning,
+        body.app-layout .col-md-10 > .row + .alert-warning {
+            background: rgba(90, 65, 0, 0.96) !important;
+            color: #fff8d0 !important;
+            border-color: var(--ldpr-gold) !important;
+        }
+        body.app-layout .col-md-10 > .alert-info,
+        body.app-layout .col-md-10 > h2.fw-bold + .alert-info,
+        body.app-layout .col-md-10 > .row + .alert-info {
+            background: rgba(0, 40, 110, 0.96) !important;
+            color: #fff !important;
+            border-color: var(--ldpr-cyan) !important;
+        }
+        body.app-layout .col-md-10 > .alert .btn-close {
+            filter: invert(1) brightness(1.2);
+        }
         body.app-layout .text-muted { color: var(--ldpr-text-muted) !important; }
         body.app-layout a:not(.btn):not(.nav-link):not(.navbar-brand) { color: var(--ldpr-cyan); }
         body.app-layout a:not(.btn):not(.nav-link):not(.navbar-brand):hover { color: var(--ldpr-cyan-soft); }
