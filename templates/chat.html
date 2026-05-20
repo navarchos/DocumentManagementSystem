@@ -19,10 +19,15 @@
             </div>
             <div id="sessionsList" class="list-group list-group-flush">
                 {% for s in chat_sessions %}
-                <button type="button" class="list-group-item list-group-item-action text-start session-item" data-session-id="{{ s.id }}">
-                    <div class="fw-semibold text-truncate">{{ s.title or 'Новый чат' }}</div>
-                    <small class="text-muted">{{ s.updated_at.strftime('%d.%m.%Y %H:%M') if s.updated_at else '' }}</small>
-                </button>
+                <div class="list-group-item list-group-item-action text-start session-item d-flex align-items-center gap-1 pe-1" data-session-id="{{ s.id }}">
+                    <div class="flex-grow-1 overflow-hidden" style="cursor:pointer" onclick="window._chatLoadSession({{ s.id }})">
+                        <div class="fw-semibold text-truncate">{{ s.title or 'Новый чат' }}</div>
+                        <small class="text-muted">{{ s.updated_at.strftime('%d.%m.%Y %H:%M') if s.updated_at else '' }}</small>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0 session-delete-btn flex-shrink-0" title="Удалить беседу" data-session-id="{{ s.id }}">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </div>
                 {% endfor %}
                 {% if not chat_sessions %}
                 <p class="text-muted small mb-0 px-2 py-3">Бесед ещё нет — отправьте первое сообщение.</p>
@@ -61,8 +66,8 @@
 
     function setActiveSession(id) {
         root.dataset.activeSession = id || '';
-        sessionsList.querySelectorAll('.session-item').forEach(btn => {
-            btn.classList.toggle('active', String(btn.dataset.sessionId) === String(id));
+        sessionsList.querySelectorAll('.session-item').forEach(item => {
+            item.classList.toggle('active', String(item.dataset.sessionId) === String(id));
         });
     }
 
@@ -97,7 +102,7 @@
         const wrap = document.createElement('div');
         wrap.className = 'mb-3 d-flex ' + (role === 'user' ? 'justify-content-end' : 'justify-content-start');
         const bubble = document.createElement('div');
-        bubble.className = 'p-3 rounded-3 ' + (role === 'user' ? 'bg-primary text-white' : 'bg-light');
+        bubble.className = 'p-3 rounded-3 ' + (role === 'user' ? 'chat-bubble-user' : 'chat-bubble-assistant');
         bubble.style.maxWidth = '85%';
         bubble.style.whiteSpace = 'pre-wrap';
         bubble.innerHTML = escapeHtml(content) + renderSources(sources);
@@ -108,6 +113,25 @@
 
     function clearMessages() {
         messagesBox.innerHTML = '';
+    }
+
+    window._chatLoadSession = function(id) { loadSession(id); };
+
+    async function deleteSession(id) {
+        if (!confirm('Удалить эту беседу?')) return;
+        try {
+            const resp = await fetch('/chat/sessions/' + id, { method: 'DELETE' });
+            if (!resp.ok) throw new Error('Ошибка удаления');
+            const activeId = root.dataset.activeSession;
+            await reloadSessions();
+            if (String(activeId) === String(id)) {
+                clearMessages();
+                messagesBox.innerHTML = '<div class="text-center text-muted py-5" id="emptyState">Задайте вопрос по распоряжениям, истории работы или приложенным файлам.<br><small>Бот видит только те данные, к которым у вас есть доступ.</small></div>';
+                setActiveSession('');
+            }
+        } catch (e) {
+            alert(e.message);
+        }
     }
 
     async function loadSession(id) {
@@ -141,20 +165,34 @@
             return;
         }
         data.sessions.forEach(s => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'list-group-item list-group-item-action text-start session-item';
-            btn.dataset.sessionId = s.id;
-            btn.innerHTML = '<div class="fw-semibold text-truncate">' + escapeHtml(s.title) + '</div>'
+            const item = document.createElement('div');
+            item.className = 'list-group-item list-group-item-action text-start session-item d-flex align-items-center gap-1 pe-1';
+            item.dataset.sessionId = s.id;
+
+            const info = document.createElement('div');
+            info.className = 'flex-grow-1 overflow-hidden';
+            info.style.cursor = 'pointer';
+            info.innerHTML = '<div class="fw-semibold text-truncate">' + escapeHtml(s.title) + '</div>'
                 + '<small class="text-muted">' + escapeHtml((s.updated_at || '').replace('T', ' ').slice(0, 16)) + '</small>';
-            btn.addEventListener('click', () => loadSession(s.id));
-            sessionsList.appendChild(btn);
+            info.addEventListener('click', () => loadSession(s.id));
+
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'btn btn-sm btn-link text-danger p-0 session-delete-btn flex-shrink-0';
+            delBtn.title = 'Удалить беседу';
+            delBtn.dataset.sessionId = s.id;
+            delBtn.innerHTML = '<i class="bi bi-trash3"></i>';
+            delBtn.addEventListener('click', () => deleteSession(s.id));
+
+            item.appendChild(info);
+            item.appendChild(delBtn);
+            sessionsList.appendChild(item);
         });
         setActiveSession(root.dataset.activeSession);
     }
 
-    sessionsList.querySelectorAll('.session-item').forEach(btn => {
-        btn.addEventListener('click', () => loadSession(btn.dataset.sessionId));
+    sessionsList.querySelectorAll('.session-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteSession(btn.dataset.sessionId));
     });
 
     newBtn.addEventListener('click', () => loadSession(''));
@@ -169,7 +207,7 @@
         input.value = '';
         const thinking = document.createElement('div');
         thinking.className = 'mb-3 d-flex justify-content-start';
-        thinking.innerHTML = '<div class="p-3 rounded-3 bg-light text-muted"><i class="bi bi-three-dots"></i> думаю...</div>';
+        thinking.innerHTML = '<div class="p-3 rounded-3 chat-bubble-thinking"><i class="bi bi-three-dots"></i> думаю...</div>';
         messagesBox.appendChild(thinking);
         messagesBox.scrollTop = messagesBox.scrollHeight;
         try {
@@ -213,11 +251,5 @@
 })();
 </script>
 
-<style>
-    #sessionsList .session-item.active {
-        background-color: #e7ecff;
-        border-color: #003399;
-    }
-</style>
 {% endif %}
 {% endblock %}

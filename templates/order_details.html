@@ -19,7 +19,7 @@
             <h6 class="fw-bold text-uppercase text-muted small mb-3">Текст распоряжения</h6>
             <div class="bg-light p-3 rounded" style="white-space:pre-wrap;">{{ order.content }}</div>
             {% if order.result %}
-            <div class="mt-4 p-3 bg-success bg-opacity-10 rounded border border-success border-opacity-25">
+            <div class="mt-4 p-3 rounded border result-box">
                 <h6 class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> Результат выполнения</h6>
                 <div style="white-space:pre-wrap;">{{ order.result.content }}</div>
                 <small class="text-muted mt-2 d-block">Подано: {{ order.result.submittedAt[:16] }}</small>

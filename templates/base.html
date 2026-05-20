@@ -7,26 +7,328 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
-        :root { --ldpr-blue: #003399; --ldpr-gold: #FFD700; }
+        :root {
+            --ldpr-navy: #0a1e42;
+            --ldpr-blue: #003399;
+            --ldpr-blue-deep: #001a4d;
+            --ldpr-cyan: #5eb8ff;
+            --ldpr-cyan-soft: #9ed4ff;
+            --ldpr-gold: #ffd700;
+            --ldpr-gold-dark: #c9a800;
+            --ldpr-text: #e8f4ff;
+            --ldpr-text-muted: #8eb4dc;
+            --ldpr-glass: rgba(8, 28, 68, 0.82);
+            --ldpr-glass-light: rgba(14, 42, 88, 0.72);
+            --ldpr-glass-border: rgba(94, 184, 255, 0.28);
+            --ldpr-shadow: 0 8px 32px rgba(0, 10, 40, 0.45);
+        }
         body { background: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        body.app-layout {
+            --bs-body-color: var(--ldpr-text);
+            --bs-body-bg: transparent;
+            --bs-primary: #1a5fcc;
+            --bs-primary-rgb: 26, 95, 204;
+            --bs-secondary: #2a4a7a;
+            --bs-secondary-rgb: 42, 74, 122;
+            --bs-link-color: var(--ldpr-cyan);
+            --bs-link-hover-color: var(--ldpr-cyan-soft);
+            --bs-border-color: var(--ldpr-glass-border);
+            background: var(--ldpr-blue-deep) url("{{ url_for('static', filename='city_scaled.png') }}") center center / cover no-repeat fixed;
+            color: var(--ldpr-text);
+        }
+        body.app-layout .navbar {
+            background: linear-gradient(135deg, rgba(0, 26, 77, 0.95), rgba(0, 51, 153, 0.88));
+            border-bottom: 1px solid rgba(255, 215, 0, 0.35);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(8px);
+        }
+        body.app-layout .navbar-brand { color: var(--ldpr-gold) !important; text-shadow: 0 0 20px rgba(94, 184, 255, 0.4); }
+        body.app-layout .navbar .text-light { color: var(--ldpr-cyan-soft) !important; }
+        body.app-layout .navbar .btn-outline-light {
+            border-color: rgba(255, 215, 0, 0.55);
+            color: var(--ldpr-gold);
+        }
+        body.app-layout .navbar .btn-outline-light:hover {
+            background: rgba(255, 215, 0, 0.15);
+            color: #fff;
+        }
         .navbar { background: linear-gradient(135deg, #003399, #001a4d); }
         .navbar-brand { font-weight: 900; letter-spacing: -1px; }
+        body.app-layout .sidebar {
+            background: rgba(6, 20, 52, 0.9);
+            min-height: calc(100vh - 56px);
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.35);
+            border-right: 1px solid var(--ldpr-glass-border);
+            backdrop-filter: blur(10px);
+        }
+        body.app-layout .sidebar .fw-bold,
+        body.app-layout .sidebar strong { color: var(--ldpr-text); }
+        body.app-layout .sidebar .text-muted { color: var(--ldpr-text-muted) !important; }
+        body.app-layout .sidebar .nav-link {
+            color: var(--ldpr-text-muted);
+            border-radius: 10px;
+            margin: 3px 8px;
+            padding: 10px 16px;
+            font-weight: 500;
+            border: 1px solid transparent;
+        }
+        body.app-layout .sidebar .nav-link:hover {
+            background: rgba(94, 184, 255, 0.12);
+            color: var(--ldpr-cyan-soft);
+            border-color: var(--ldpr-glass-border);
+        }
+        body.app-layout .sidebar .nav-link.active {
+            background: linear-gradient(135deg, rgba(0, 51, 153, 0.95), rgba(26, 95, 204, 0.85));
+            color: #fff !important;
+            border-color: rgba(255, 215, 0, 0.45);
+            box-shadow: 0 2px 12px rgba(0, 80, 180, 0.35);
+        }
+        body.app-layout .sidebar .nav-link.active i { color: var(--ldpr-gold); }
+        body.app-layout .avatar-circle {
+            background: linear-gradient(145deg, #1a5fcc, #003399) !important;
+            border: 2px solid rgba(255, 215, 0, 0.65);
+            box-shadow: 0 0 16px rgba(94, 184, 255, 0.35);
+        }
         .sidebar { background: white; min-height: calc(100vh - 56px); box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
         .sidebar .nav-link { color: #555; border-radius: 10px; margin: 3px 8px; padding: 10px 16px; font-weight: 500; }
         .sidebar .nav-link:hover { background: #eef; color: #003399; }
         .sidebar .nav-link.active { background: #003399; color: #fff !important; }
+        body.app-layout .card {
+            border: 1px solid var(--ldpr-glass-border);
+            border-radius: 18px;
+            box-shadow: var(--ldpr-shadow);
+            background: var(--ldpr-glass);
+            backdrop-filter: blur(12px);
+            color: var(--ldpr-text);
+        }
+        body.app-layout h2, body.app-layout h3, body.app-layout h4, body.app-layout h5, body.app-layout h6,
+        body.app-layout .fw-bold:not(.text-danger):not(.text-warning):not(.text-success) { color: var(--ldpr-text); }
+        body.app-layout h2 i, body.app-layout h3 i { color: var(--ldpr-gold); }
+        body.app-layout .text-muted { color: var(--ldpr-text-muted) !important; }
+        body.app-layout a:not(.btn):not(.nav-link):not(.navbar-brand) { color: var(--ldpr-cyan); }
+        body.app-layout a:not(.btn):not(.nav-link):not(.navbar-brand):hover { color: var(--ldpr-cyan-soft); }
         .card { border: none; border-radius: 18px; box-shadow: 0 2px 16px rgba(0,0,0,0.05); }
-        .stat-card { border-left: 5px solid #003399; }
+        body.app-layout .table {
+            --bs-table-bg: transparent;
+            --bs-table-color: var(--ldpr-text);
+            --bs-table-striped-bg: rgba(94, 184, 255, 0.06);
+            --bs-table-hover-bg: rgba(94, 184, 255, 0.12);
+            --bs-table-border-color: var(--ldpr-glass-border);
+        }
+        body.app-layout .table th {
+            color: var(--ldpr-cyan-soft);
+            border-bottom-color: rgba(255, 215, 0, 0.25);
+        }
+        body.app-layout .table td { border-color: var(--ldpr-glass-border); }
+        body.app-layout .table-hover tbody tr:hover { color: var(--ldpr-text); }
+        body.app-layout .form-control,
+        body.app-layout .form-select,
+        body.app-layout .input-group-text {
+            background: rgba(4, 18, 48, 0.75);
+            border-color: var(--ldpr-glass-border);
+            color: var(--ldpr-text);
+        }
+        body.app-layout .form-control:focus,
+        body.app-layout .form-select:focus {
+            background: rgba(4, 18, 48, 0.9);
+            border-color: var(--ldpr-cyan);
+            color: var(--ldpr-text);
+            box-shadow: 0 0 0 0.2rem rgba(94, 184, 255, 0.25);
+        }
+        body.app-layout .form-control::placeholder { color: var(--ldpr-text-muted); }
+        body.app-layout .modal-content {
+            background: var(--ldpr-glass);
+            border: 1px solid var(--ldpr-glass-border);
+            color: var(--ldpr-text);
+            backdrop-filter: blur(12px);
+        }
+        body.app-layout .modal-header,
+        body.app-layout .modal-footer { border-color: var(--ldpr-glass-border); }
+        body.app-layout .btn-close { filter: invert(1) brightness(1.2); }
+        body.app-layout .list-group-item {
+            background: rgba(8, 28, 68, 0.55);
+            border-color: var(--ldpr-glass-border);
+            color: var(--ldpr-text);
+        }
+        body.app-layout .list-group-item-action:hover,
+        body.app-layout .list-group-item-action:focus {
+            background: rgba(94, 184, 255, 0.14);
+            color: var(--ldpr-cyan-soft);
+        }
+        body.app-layout .list-group-item-action.active {
+            background: linear-gradient(135deg, rgba(0, 51, 153, 0.9), rgba(26, 95, 204, 0.75));
+            border-color: rgba(255, 215, 0, 0.4);
+            color: #fff;
+        }
+        body.app-layout .bg-light {
+            background-color: rgba(6, 24, 58, 0.65) !important;
+            color: var(--ldpr-text);
+            border: 1px solid var(--ldpr-glass-border);
+        }
+        body.app-layout .border-top,
+        body.app-layout .border-bottom,
+        body.app-layout .border { border-color: var(--ldpr-glass-border) !important; }
+        body.app-layout .alert {
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--ldpr-glass-border);
+        }
+        body.app-layout .alert-warning {
+            background: rgba(201, 168, 0, 0.2);
+            color: #ffe566;
+            border-color: rgba(255, 215, 0, 0.35);
+        }
+        body.app-layout .alert-danger {
+            background: rgba(180, 40, 50, 0.25);
+            color: #ffb3ba;
+            border-color: rgba(220, 53, 69, 0.4);
+        }
+        body.app-layout .alert-success {
+            background: rgba(30, 120, 90, 0.25);
+            color: #8ef0c8;
+            border-color: rgba(40, 167, 69, 0.35);
+        }
+        body.app-layout .alert-info {
+            background: rgba(26, 95, 204, 0.25);
+            color: var(--ldpr-cyan-soft);
+        }
+        .stat-card { border-left: 5px solid var(--ldpr-cyan); }
+        body.app-layout .stat-card h2 { color: var(--ldpr-cyan-soft); }
+        body.app-layout .stat-card.stat-gold { border-left-color: var(--ldpr-gold); }
+        body.app-layout .stat-card.stat-gold h2 { color: var(--ldpr-gold); }
+        body.app-layout .stat-card.stat-teal { border-left-color: #3dd6c8; }
+        body.app-layout .stat-card.stat-teal h2 { color: #3dd6c8; }
+        body.app-layout .stat-card.stat-sky { border-left-color: var(--ldpr-cyan); }
         .badge-status { font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 20px; }
+        body.app-layout .btn-primary {
+            background: linear-gradient(180deg, #2a6fd4 0%, #003399 100%);
+            border: 1px solid rgba(94, 184, 255, 0.4);
+            color: #fff;
+        }
+        body.app-layout .btn-primary:hover {
+            background: linear-gradient(180deg, #3d82e8 0%, #002266 100%);
+            border-color: var(--ldpr-cyan);
+            color: #fff;
+        }
+        body.app-layout .btn-outline-primary {
+            color: var(--ldpr-cyan);
+            border-color: var(--ldpr-cyan);
+        }
+        body.app-layout .btn-outline-primary:hover {
+            background: rgba(94, 184, 255, 0.15);
+            color: var(--ldpr-cyan-soft);
+            border-color: var(--ldpr-cyan-soft);
+        }
+        body.app-layout .btn-secondary {
+            background: rgba(42, 74, 122, 0.85);
+            border-color: var(--ldpr-glass-border);
+            color: var(--ldpr-text);
+        }
+        body.app-layout .btn-secondary:hover {
+            background: rgba(58, 95, 145, 0.95);
+            color: #fff;
+        }
+        body.app-layout .btn-success {
+            background: linear-gradient(180deg, #2a9d6a 0%, #1a6b45 100%);
+            border-color: rgba(62, 220, 150, 0.35);
+        }
+        body.app-layout .btn-danger {
+            background: linear-gradient(180deg, #c43c4a 0%, #8b1f2a 100%);
+            border-color: rgba(255, 120, 130, 0.35);
+        }
+        body.app-layout .btn-warning {
+            background: linear-gradient(180deg, var(--ldpr-gold) 0%, var(--ldpr-gold-dark) 100%);
+            border-color: rgba(255, 215, 0, 0.5);
+            color: var(--ldpr-navy);
+            font-weight: 600;
+        }
+        body.app-layout .btn-warning:hover {
+            background: linear-gradient(180deg, #ffe44d 0%, var(--ldpr-gold) 100%);
+            color: var(--ldpr-navy);
+        }
+        body.app-layout .btn-gold,
+        .btn-gold {
+            background: linear-gradient(180deg, var(--ldpr-gold) 0%, var(--ldpr-gold-dark) 100%);
+            color: #0a1e42;
+            font-weight: 700;
+            border: none;
+        }
         .btn-primary { background: #003399; border: none; }
         .btn-primary:hover { background: #002266; }
         .btn-gold { background: #FFD700; color: #000; font-weight: 700; }
         .table th { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #888; }
-        .overdue-row { background-color: #ffebee !important; }
+        body.app-layout .overdue-row {
+            background-color: rgba(180, 40, 50, 0.22) !important;
+        }
+        body.app-layout .overdue-row:hover {
+            background-color: rgba(180, 40, 50, 0.32) !important;
+        }
+        body.app-layout .text-primary { color: var(--ldpr-cyan) !important; }
+        body.app-layout .text-warning { color: var(--ldpr-gold) !important; }
+        body.app-layout .badge.bg-primary {
+            background: linear-gradient(135deg, #1a5fcc, #003399) !important;
+            border: 1px solid rgba(94, 184, 255, 0.35);
+        }
+        body.app-layout .badge.bg-secondary {
+            background: rgba(42, 74, 122, 0.9) !important;
+            color: var(--ldpr-cyan-soft);
+        }
+        body.app-layout code {
+            background: rgba(4, 18, 48, 0.8);
+            color: var(--ldpr-gold);
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+        }
+        body.app-layout .chat-bubble-user {
+            background: linear-gradient(135deg, #1a5fcc, #003399);
+            color: #fff;
+            border: 1px solid rgba(94, 184, 255, 0.35);
+        }
+        body.app-layout .chat-bubble-assistant {
+            background: rgba(14, 42, 88, 0.85);
+            color: var(--ldpr-text);
+            border: 1px solid var(--ldpr-glass-border);
+        }
+        body.app-layout .chat-bubble-thinking {
+            background: rgba(14, 42, 88, 0.6);
+            color: var(--ldpr-text-muted);
+            border: 1px solid var(--ldpr-glass-border);
+        }
+        body.app-layout #sessionsList .session-item.active {
+            background: rgba(94, 184, 255, 0.18);
+            border-color: rgba(255, 215, 0, 0.45);
+            color: var(--ldpr-cyan-soft);
+        }
+        body.app-layout .badge.bg-warning {
+            background-color: rgba(255, 215, 0, 0.9) !important;
+            color: var(--ldpr-navy) !important;
+        }
+        body.app-layout .badge.bg-success { background-color: rgba(45, 160, 110, 0.9) !important; }
+        body.app-layout .badge.bg-danger { background-color: rgba(196, 60, 74, 0.9) !important; }
+        body.app-layout .btn-outline-secondary {
+            color: var(--ldpr-text-muted);
+            border-color: var(--ldpr-glass-border);
+        }
+        body.app-layout .btn-outline-secondary:hover {
+            background: rgba(94, 184, 255, 0.12);
+            color: var(--ldpr-cyan-soft);
+        }
+        body.app-layout .btn-outline-danger {
+            color: #ff8a94;
+            border-color: rgba(220, 53, 69, 0.55);
+        }
+        body.app-layout .btn-outline-danger:hover {
+            background: rgba(180, 40, 50, 0.25);
+            color: #ffb3ba;
+        }
+        body.app-layout .result-box {
+            background: rgba(30, 120, 90, 0.2) !important;
+            border-color: rgba(62, 220, 150, 0.35) !important;
+        }
+        body.app-layout .result-box .text-success { color: #8ef0c8 !important; }
         .notification-badge { position: relative; top: -8px; left: -5px; background-color: #dc3545; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; }
     </style>
 </head>
-<body>
+<body{% if current_user %} class="app-layout"{% endif %}>
     {% if current_user %}
     <nav class="navbar navbar-dark">
         <div class="container-fluid">
@@ -47,7 +349,7 @@
         <div class="row">
             <div class="col-md-2 sidebar py-3">
                 <div class="text-center mb-4">
-                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width:64px;height:64px;font-size:1.5rem;font-weight:700;">{{ current_user.full_name[0] }}</div>
+                    <div class="avatar-circle text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width:64px;height:64px;font-size:1.5rem;font-weight:700;">{{ current_user.full_name[0] }}</div>
                     <p class="mt-2 mb-0 fw-bold">{{ current_user.full_name }}</p>
                     <small class="text-muted">{{ current_user.role }}</small>
                 </div>
